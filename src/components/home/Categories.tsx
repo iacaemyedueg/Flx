@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Heart, Eye } from 'lucide-react';
+import { useFavorites } from '../../context/FavoritesContext';
+import { useToast } from '../../context/ToastContext';
+import { Product } from '../../types';
+import { useNavigate } from 'react-router-dom';
 
 interface CategoriesProps {
   title?: string;
@@ -8,6 +12,9 @@ interface CategoriesProps {
 
 export const Categories = ({ title = "Popular Categories", variant = 'default' }: CategoriesProps) => {
   const [startIndex, setStartIndex] = useState(0);
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const defaultProducts = [
     {
@@ -83,6 +90,15 @@ export const Categories = ({ title = "Popular Categories", variant = 'default' }
 
   const products = variant === 'browse' ? browseProducts : defaultProducts;
 
+  const handleToggleFavorite = (product: any) => {
+    const wasFavorite = isFavorite(product.id);
+    // Categories products are slightly different from API products, but we'll cast them for the favorites context
+    toggleFavorite(product as Product);
+    if (!wasFavorite) {
+      addToast('Added to favorites');
+    }
+  };
+
   const itemsPerPage = 4;
 
   const nextSlide = () => {
@@ -120,14 +136,33 @@ export const Categories = ({ title = "Popular Categories", variant = 'default' }
                   className="w-1/4 flex-shrink-0 px-3 group flex flex-col items-center"
                 >
                   {/* Card Image Container */}
-                  <div className="relative bg-gray-50 w-[90%] h-[200px] flex flex-col items-center justify-center rounded-md mb-4 group-hover:shadow-lg transition-shadow overflow-hidden">
+                  <div 
+                    onClick={() => variant === 'default' && handleToggleFavorite(product)}
+                    className="relative bg-gray-50 w-[90%] h-[200px] flex flex-col items-center justify-center rounded-md mb-4 group-hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
+                  >
                     {/* Icons */}
                     {variant === 'default' && (
                       <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-                        <button className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors shadow-sm">
-                          <Heart className="w-4 h-4" />
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFavorite(product);
+                          }}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                            isFavorite(product.id) 
+                              ? 'bg-red-500 text-white' 
+                              : 'bg-white text-black hover:bg-red-500 hover:text-white'
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
                         </button>
-                        <button className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors shadow-sm">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/products/${product.id}`);
+                          }}
+                          className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors shadow-sm"
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
                       </div>
@@ -142,7 +177,13 @@ export const Categories = ({ title = "Popular Categories", variant = 'default' }
 
                     {/* Buy Now Button */}
                     {variant === 'default' && (
-                      <button className="absolute bottom-0 left-0 w-full bg-black text-white py-2 text-sm font-medium opacity-100 transition-opacity hover:bg-gray-800">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/checkout', { state: { product } });
+                        }}
+                        className="absolute bottom-0 left-0 w-full bg-black text-white py-2 text-sm font-medium opacity-100 transition-opacity hover:bg-gray-800"
+                      >
                         Buy Now
                       </button>
                     )}

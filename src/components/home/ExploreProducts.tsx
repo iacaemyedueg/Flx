@@ -2,13 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Product } from '../../types';
 import { Heart, Eye, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useFavorites } from '../../context/FavoritesContext';
+import { useToast } from '../../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 
 export const ExploreProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.getProducts().then(data => setProducts(data.slice(8, 16))); // Get last 8 for explore
   }, []);
+
+  const handleToggleFavorite = (product: Product) => {
+    const wasFavorite = isFavorite(product.id);
+    toggleFavorite(product);
+    if (!wasFavorite) {
+      addToast('Added to favorites');
+    }
+  };
 
   return (
     <section className="py-16 mb-10">
@@ -37,10 +51,20 @@ export const ExploreProducts = () => {
             <div key={product.id} className="group">
               <div className="relative bg-gray-100 rounded-md p-4 mb-4 h-[200px] flex items-center justify-center overflow-hidden">
                 <div className="absolute top-3 right-3 flex flex-col gap-2">
-                  <button className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
-                    <Heart className="w-4 h-4" />
+                  <button 
+                    onClick={() => handleToggleFavorite(product)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                      isFavorite(product.id) 
+                        ? 'bg-red-500 text-white' 
+                        : 'bg-white text-black hover:bg-red-500 hover:text-white'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
                   </button>
-                  <button className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
+                  <button 
+                    onClick={() => navigate(`/products/${product.id}`)}
+                    className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                  >
                     <Eye className="w-4 h-4" />
                   </button>
                 </div>
@@ -49,9 +73,12 @@ export const ExploreProducts = () => {
                   alt={product.title}
                   className="w-3/4 h-3/4 object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110"
                 />
-                 {/* Add To Cart Button (Shows on Hover) */}
-                 <button className="absolute bottom-0 left-0 w-full bg-black text-white py-2 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Add To Cart
+                 {/* Buy Now Button (Shows on Hover) */}
+                 <button 
+                  onClick={() => navigate('/checkout', { state: { product } })}
+                  className="absolute bottom-0 left-0 w-full bg-black text-white py-2 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-800"
+                 >
+                  Buy Now
                 </button>
               </div>
 
